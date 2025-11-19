@@ -1,0 +1,38 @@
+const GEMINI_KEY = 'AIzaSyCRh3p5-Ni7aTI_y3c4K1c4q1c4q1c4q1c'; // <- replace with your key
+const aiBox = document.getElementById('aiChatBox');
+let thread = [{role:'user',parts:[{text:'Hello'}]},{role:'model',parts:[{text:'Hi! Ask me anything about events in Zimbabwe.'}]}];
+
+function appendChat(who,txt){
+  const div = document.createElement('div');
+  div.className = who==='user' ? 'text-end' : '';
+  div.innerHTML = `<span class="badge ${who==='user'?'bg-primary':'bg-secondary'}">${txt}</span>`;
+  aiBox.appendChild(div);
+  aiBox.scrollTop = aiBox.scrollHeight;
+}
+
+document.getElementById('aiBtn').addEventListener('click', ()=> {
+  $('#aiModal').modal('show');
+  aiBox.innerHTML='';
+  thread.forEach(m=>appendChat(m.role==='user'?'user':'model', m.parts[0].text));
+});
+
+document.getElementById('aiSend').addEventListener('click', async ()=>{
+  const inp = document.getElementById('aiInput');
+  if(!inp.value.trim()) return;
+  appendChat('user', inp.value);
+  thread.push({role:'user',parts:[{text:inp.value}]});
+  inp.value='';
+  try{
+    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_KEY}`,{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({contents:thread})
+    });
+    const dat = await res.json();
+    const reply = dat.candidates[0].content.parts[0].text;
+    appendChat('model', reply);
+    thread.push({role:'model',parts:[{text:reply}]});
+  }catch(e){
+    appendChat('model','Sorry, I could not get a reply.');
+  }
+});
